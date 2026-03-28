@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VOIZEX — The Silent Translator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --bg: #0a0a0b;
+    --surface: #111114;
+    --border: rgba(255,255,255,0.06);
+    --text: #e8e8ec;
+    --muted: rgba(232,232,236,0.38);
+    --accent: #b8ff57;
+    --accent-dim: rgba(184,255,87,0.12);
+    --accent-mid: rgba(184,255,87,0.45);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* ── NOISE OVERLAY ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 999;
+    opacity: 0.6;
+  }
+
+  /* ── STARS ── */
+  .stars {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .star {
+    position: absolute;
+    border-radius: 50%;
+    background: white;
+    animation: twinkle var(--dur, 4s) ease-in-out infinite var(--delay, 0s);
+  }
+  @keyframes twinkle {
+    0%, 100% { opacity: var(--min-op, 0.1); }
+    50% { opacity: var(--max-op, 0.6); }
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    padding: 28px 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.4s, background 0.4s;
+  }
+  nav.scrolled {
+    border-color: var(--border);
+    background: rgba(10,10,11,0.85);
+    backdrop-filter: blur(16px);
+  }
+  .logo {
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    color: var(--text);
+    text-decoration: none;
+  }
+  .logo span { color: var(--accent); }
+  .nav-links {
+    display: flex;
+    gap: 40px;
+    list-style: none;
+  }
+  .nav-links a {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    color: var(--muted);
+    text-decoration: none;
+    text-transform: uppercase;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--text); }
+
+  /* ── SECTIONS ── */
+  section { position: relative; z-index: 1; }
+
+  /* ── HERO ── */
+  #hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 140px 40px 100px;
+    overflow: hidden;
+  }
+
+  .hero-eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 32px;
+    opacity: 0;
+    animation: fadeUp 0.8s ease forwards 0.3s;
+  }
+
+  .hero-title {
+    font-size: clamp(48px, 8vw, 110px);
+    font-weight: 800;
+    line-height: 0.88;
+    letter-spacing: -0.03em;
+    margin-bottom: 32px;
+    opacity: 0;
+    animation: fadeUp 0.9s ease forwards 0.5s;
+  }
+  .hero-title .line-2 {
+    display: block;
+    color: var(--accent);
+  }
+
+  .hero-sub {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    font-weight: 300;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+    max-width: 480px;
+    margin: 0 auto 56px;
+    opacity: 0;
+    animation: fadeUp 0.9s ease forwards 0.7s;
+  }
+
+  .hero-cta {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    flex-wrap: wrap;
+    opacity: 0;
+    animation: fadeUp 0.9s ease forwards 0.9s;
+  }
+
+  .btn-primary {
+    display: inline-block;
+    padding: 14px 36px;
+    background: var(--accent);
+    color: #0a0a0b;
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(184,255,87,0.3);
+  }
+
+  .btn-ghost {
+    display: inline-block;
+    padding: 14px 36px;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .btn-ghost:hover { border-color: var(--accent-mid); color: var(--text); }
+
+  /* orbit graphic */
+  .orbit-wrap {
+    position: absolute;
+    width: 700px;
+    height: 700px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0.07;
+    pointer-events: none;
+  }
+  .orbit {
+    position: absolute;
+    border-radius: 50%;
+    border: 1px solid var(--accent);
+  }
+  .orbit-1 { width: 300px; height: 300px; top: 50%; left: 50%; transform: translate(-50%,-50%); animation: rotate 20s linear infinite; }
+  .orbit-2 { width: 500px; height: 500px; top: 50%; left: 50%; transform: translate(-50%,-50%); animation: rotate 35s linear infinite reverse; }
+  .orbit-3 { width: 700px; height: 700px; top: 50%; left: 50%; transform: translate(-50%,-50%); animation: rotate 50s linear infinite; }
+  @keyframes rotate { to { transform: translate(-50%,-50%) rotate(360deg); } }
+
+  /* ── DIVIDER ── */
+  .divider {
+    width: 100%;
+    height: 1px;
+    background: var(--border);
+    margin: 0 60px;
+    width: calc(100% - 120px);
+  }
+
+  /* ── PROBLEM ── */
+  #problem {
+    padding: 120px 60px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .section-tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 20px;
+    display: block;
+  }
+  .section-title {
+    font-size: clamp(36px, 5vw, 64px);
+    font-weight: 700;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    margin-bottom: 64px;
+  }
+  .section-title em { font-style: normal; color: var(--muted); }
+
+  .problem-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+  }
+  .problem-card {
+    background: var(--bg);
+    padding: 40px 36px;
+    transition: background 0.3s;
+  }
+  .problem-card:hover { background: var(--surface); }
+  .problem-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    color: var(--accent);
+    margin-bottom: 20px;
+  }
+  .problem-card h3 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    line-height: 1.3;
+  }
+  .problem-card p {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    font-weight: 300;
+    color: var(--muted);
+    line-height: 1.8;
+  }
+
+  /* ── PRODUCT ── */
+  #product {
+    padding: 120px 60px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .product-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 80px;
+    align-items: start;
+  }
+
+  .product-visual {
+    position: relative;
+    aspect-ratio: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .product-visual::before {
+    content: '';
+    position: absolute;
+    width: 200px;
+    height: 200px;
+    background: radial-gradient(circle, rgba(184,255,87,0.15) 0%, transparent 70%);
+    border-radius: 50%;
+    animation: pulse 3s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 0.6; }
+    50% { transform: scale(1.3); opacity: 1; }
+  }
+
+  .device-svg { width: 260px; height: 260px; position: relative; z-index: 1; }
+
+  .product-components {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 48px;
+  }
+  .component {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    gap: 24px;
+    padding: 20px 0;
+    border-bottom: 1px solid var(--border);
+    align-items: start;
+  }
+  .component:last-child { border-bottom: none; }
+  .component-name {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    padding-top: 3px;
+  }
+  .component-desc {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    font-weight: 300;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+
+  /* ── TECH STACK ── */
+  #tech {
+    padding: 120px 60px;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .tech-inner { max-width: 1200px; margin: 0 auto; }
+
+  .tech-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--border);
+    margin-top: 64px;
+  }
+  .tech-col {
+    background: var(--surface);
+    padding: 36px 28px;
+  }
+  .tech-col-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 24px;
+  }
+  .tech-item {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    font-weight: 300;
+    color: var(--muted);
+    line-height: 1.7;
+    margin-bottom: 10px;
+    padding-left: 14px;
+    position: relative;
+  }
+  .tech-item::before {
+    content: '—';
+    position: absolute;
+    left: 0;
+    color: var(--accent);
+    font-size: 10px;
+  }
+
+  /* ── MARKET ── */
+  #market {
+    padding: 120px 60px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .market-tam {
+    font-size: clamp(80px, 14vw, 180px);
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    color: transparent;
+    -webkit-text-stroke: 1px rgba(184,255,87,0.3);
+    line-height: 1;
+    margin-bottom: 16px;
+  }
+  .market-tam span { color: var(--accent); -webkit-text-stroke: 0; }
+  .market-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    margin-bottom: 80px;
+  }
+
+  .segments {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+  .segment {
+    border: 1px solid var(--border);
+    padding: 36px 28px;
+    transition: border-color 0.3s, background 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+  .segment::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--accent);
+    transform: scaleX(0);
+    transition: transform 0.3s;
+  }
+  .segment:hover { border-color: var(--accent-mid); background: var(--accent-dim); }
+  .segment:hover::after { transform: scaleX(1); }
+  .segment-tam {
+    font-size: 36px;
+    font-weight: 800;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+  .segment-name {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 20px;
+  }
+  .segment p {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    font-weight: 300;
+    color: var(--muted);
+    line-height: 1.8;
+  }
+
+  /* ── ROADMAP ── */
+  #roadmap {
+    padding: 120px 60px;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .roadmap-inner { max-width: 1200px; margin: 0 auto; }
+
+  .timeline {
+    margin-top: 64px;
+    position: relative;
+    padding-left: 40px;
+  }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 12px;
+    bottom: 12px;
+    width: 1px;
+    background: linear-gradient(to bottom, var(--accent), transparent);
+  }
+  .tl-item {
+    position: relative;
+    padding: 0 0 52px 40px;
+  }
+  .tl-item::before {
+    content: '';
+    position: absolute;
+    left: -4px;
+    top: 8px;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 16px rgba(184,255,87,0.5);
+  }
+  .tl-phase {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+  .tl-title {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .tl-desc {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    font-weight: 300;
+    color: var(--muted);
+    line-height: 1.8;
+    max-width: 560px;
+  }
+
+  /* ── SEED ── */
+  #seed {
+    padding: 120px 60px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .seed-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 80px;
+    align-items: start;
+  }
+  .seed-amount {
+    font-size: clamp(60px, 9vw, 120px);
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    line-height: 1;
+    color: var(--accent);
+    margin-bottom: 16px;
+  }
+  .seed-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    margin-bottom: 40px;
+  }
+  .seed-desc {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    font-weight: 300;
+    color: var(--muted);
+    line-height: 1.9;
+  }
+
+  .fund-bars { display: flex; flex-direction: column; gap: 20px; }
+  .fund-item {}
+  .fund-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  .fund-name {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text);
+  }
+  .fund-val {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+  }
+  .bar-track {
+    height: 2px;
+    background: var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%;
+    background: var(--accent);
+    transform-origin: left;
+    animation: barGrow 1.2s cubic-bezier(0.4,0,0.2,1) forwards;
+    transform: scaleX(0);
+  }
+  @keyframes barGrow { to { transform: scaleX(1); } }
+
+  /* ── CONTACT ── */
+  #contact {
+    padding: 120px 60px;
+    border-top: 1px solid var(--border);
+    text-align: center;
+  }
+  .contact-inner { max-width: 640px; margin: 0 auto; }
+  .contact-title {
+    font-size: clamp(40px, 7vw, 88px);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 0.95;
+    margin-bottom: 48px;
+  }
+  .contact-links {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    align-items: center;
+  }
+  .contact-link {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: var(--muted);
+    text-decoration: none;
+    transition: color 0.2s;
+    padding: 14px 32px;
+    border: 1px solid var(--border);
+    min-width: 320px;
+    justify-content: center;
+  }
+  .contact-link:hover { color: var(--accent); border-color: var(--accent-mid); }
+  .contact-link-icon {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
+    flex-shrink: 0;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    padding: 32px 60px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  footer p {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(28px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  .reveal.visible { opacity: 1; transform: none; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 900px) {
+    nav { padding: 20px 24px; }
+    .nav-links { display: none; }
+    #problem, #product, #tech, #market, #roadmap, #seed, #contact, footer {
+      padding-left: 24px; padding-right: 24px;
+    }
+    .problem-grid { grid-template-columns: 1fr; }
+    .product-layout { grid-template-columns: 1fr; gap: 40px; }
+    .tech-grid { grid-template-columns: 1fr 1fr; }
+    .segments { grid-template-columns: 1fr; }
+    .seed-layout { grid-template-columns: 1fr; gap: 48px; }
+    #tech { padding-left: 24px; padding-right: 24px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Stars -->
+<div class="stars" id="stars"></div>
+
+<!-- Nav -->
+<nav id="nav">
+  <a href="#" class="logo">VOIZE<span>X</span></a>
+  <ul class="nav-links">
+    <li><a href="#product">Product</a></li>
+    <li><a href="#tech">Technology</a></li>
+    <li><a href="#market">Market</a></li>
+    <li><a href="#seed">Invest</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+</nav>
+
+<!-- Hero -->
+<section id="hero">
+  <div class="orbit-wrap" aria-hidden="true">
+    <div class="orbit orbit-1"></div>
+    <div class="orbit orbit-2"></div>
+    <div class="orbit orbit-3"></div>
+  </div>
+
+  <p class="hero-eyebrow">Seed Round · 2026</p>
+  <h1 class="hero-title">
+    THE SILENT<br>
+    <span class="line-2">TRANSLATOR</span>
+  </h1>
+  <p class="hero-sub">You speak. They hear you — in their language, in your voice. No phone. No pause. No friction.</p>
+  <div class="hero-cta">
+    <a href="#seed" class="btn-primary">Seed Round Details</a>
+    <a href="#product" class="btn-ghost">Explore Product</a>
+  </div>
+</section>
+
+<!-- Problem -->
+<section id="problem">
+  <span class="section-tag reveal">01 — The Problem</span>
+  <h2 class="section-title reveal">Every existing solution<br><em>breaks the human moment.</em></h2>
+  <div class="problem-grid">
+    <div class="problem-card reveal">
+      <p class="problem-num">001</p>
+      <h3>Phone translators</h3>
+      <p>Interrupt eye contact. Disrupt dialogue rhythm. Require passing a device between strangers.</p>
+    </div>
+    <div class="problem-card reveal">
+      <p class="problem-num">002</p>
+      <h3>Visible headphones</h3>
+      <p>Signal that connection is artificial. Robotic output. The other person always knows.</p>
+    </div>
+    <div class="problem-card reveal">
+      <p class="problem-num">003</p>
+      <h3>Language learning</h3>
+      <p>$5K–15K per year, per language. 5+ years to fluency. Ineffective outside immersion environments.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Product -->
+<section id="product">
+  <span class="section-tag reveal">02 — The Product</span>
+  <h2 class="section-title reveal">Three components.<br><em>One seamless system.</em></h2>
+
+  <div class="product-layout">
+    <div class="product-visual reveal" aria-label="VOIZEX device illustration">
+      <!-- SVG device schematic -->
+      <svg class="device-svg" viewBox="0 0 260 260" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Neural Case -->
+        <rect x="80" y="10" width="100" height="60" rx="8" stroke="#b8ff57" stroke-width="1.5" stroke-dasharray="4 3"/>
+        <text x="130" y="36" text-anchor="middle" font-family="DM Mono" font-size="8" fill="#b8ff57" letter-spacing="1">NEURAL</text>
+        <text x="130" y="50" text-anchor="middle" font-family="DM Mono" font-size="8" fill="#b8ff57" letter-spacing="1">CASE</text>
+        <!-- Mouth Guard -->
+        <path d="M60 130 Q130 100 200 130 Q200 165 130 175 Q60 165 60 130Z" stroke="rgba(232,232,236,0.6)" stroke-width="1.5" fill="none"/>
+        <text x="130" y="145" text-anchor="middle" font-family="DM Mono" font-size="7" fill="rgba(232,232,236,0.5)" letter-spacing="1">MOUTH GUARD</text>
+        <!-- Earpiece -->
+        <circle cx="208" cy="190" r="24" stroke="#b8ff57" stroke-width="1.5" fill="none"/>
+        <circle cx="208" cy="190" r="10" stroke="rgba(184,255,87,0.4)" stroke-width="1" fill="none"/>
+        <text x="208" y="194" text-anchor="middle" font-family="DM Mono" font-size="6" fill="#b8ff57" letter-spacing="0.5">EAR</text>
+        <!-- Connections -->
+        <line x1="130" y1="70" x2="130" y2="100" stroke="rgba(184,255,87,0.3)" stroke-width="1" stroke-dasharray="3 3"/>
+        <line x1="185" y1="155" x2="190" y2="168" stroke="rgba(184,255,87,0.3)" stroke-width="1" stroke-dasharray="3 3"/>
+        <!-- Signal arcs -->
+        <path d="M40 130 Q20 110 40 90" stroke="rgba(184,255,87,0.2)" stroke-width="1" fill="none"/>
+        <path d="M30 130 Q5 110 30 85" stroke="rgba(184,255,87,0.1)" stroke-width="1" fill="none"/>
+        <!-- Bone conduction indicator -->
+        <circle cx="52" cy="130" r="5" fill="none" stroke="rgba(184,255,87,0.5)" stroke-width="1"/>
+        <text x="52" y="148" text-anchor="middle" font-family="DM Mono" font-size="6" fill="rgba(184,255,87,0.5)" letter-spacing="0.5">BONE</text>
+        <text x="52" y="156" text-anchor="middle" font-family="DM Mono" font-size="6" fill="rgba(184,255,87,0.5)" letter-spacing="0.5">MIC</text>
+      </svg>
+    </div>
+
+    <div>
+      <div class="product-components reveal">
+        <div class="component">
+          <span class="component-name">Mouth Guard</span>
+          <span class="component-desc">Bone conduction microphone captures speech before it leaves the mouth. Suppresses outward sound. Enables silent input.</span>
+        </div>
+        <div class="component">
+          <span class="component-name">Neural Case</span>
+          <span class="component-desc">On-device GPU (Jetson Orin Nano). Whisper + Llama 7B + XTTS v2. No cloud. No data transfer. ~500ms latency.</span>
+        </div>
+        <div class="component">
+          <span class="component-name">Micro Earbuds</span>
+          <span class="component-desc">Incoming speech translated in parallel, delivered silently. No visible hardware. No shared device required.</span>
+        </div>
+        <div class="component">
+          <span class="component-name">Voice Clone</span>
+          <span class="component-desc">Translation delivered in your authentic voice. Listener hears you — not a robotic proxy. Trained on-device, no audio saved.</span>
+        </div>
+        <div class="component">
+          <span class="component-name">Ghost Mode</span>
+          <span class="component-desc">EMG subvocal recognition. Speak without producing sound. Target: Phase 2, months 24–32. Zero audio signature.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Tech -->
+<section id="tech">
+  <div class="tech-inner">
+    <span class="section-tag reveal">03 — Technology</span>
+    <h2 class="section-title reveal">Full-stack AI.<br><em>Entirely on-device.</em></h2>
+
+    <div class="tech-grid reveal">
+      <div class="tech-col">
+        <p class="tech-col-title">Hardware</p>
+        <p class="tech-item">Snapdragon 7 Gen 3 SoC</p>
+        <p class="tech-item">NVIDIA Jetson Orin Nano 8GB</p>
+        <p class="tech-item">Dual MEMS microphones</p>
+        <p class="tech-item">Bone conduction vibrator</p>
+        <p class="tech-item">EMG electrodes</p>
+        <p class="tech-item">Li-ion + wireless induction</p>
+      </div>
+      <div class="tech-col">
+        <p class="tech-col-title">Software AI</p>
+        <p class="tech-item">Whisper — speech recognition</p>
+        <p class="tech-item">Llama 7B — translation</p>
+        <p class="tech-item">XTTS v2 — voice synthesis</p>
+        <p class="tech-item">EMG ML Pipeline</p>
+        <p class="tech-item">LoRA on-device finetuning</p>
+      </div>
+      <div class="tech-col">
+        <p class="tech-col-title">Infrastructure</p>
+        <p class="tech-item">End-to-end encrypted</p>
+        <p class="tech-item">Offline-first architecture</p>
+        <p class="tech-item">No cloud dependencies</p>
+        <p class="tech-item">Bluetooth 5.2 mesh</p>
+      </div>
+      <div class="tech-col">
+        <p class="tech-col-title">Mobile App</p>
+        <p class="tech-item">iOS / Android (Flutter)</p>
+        <p class="tech-item">Voice clone training UI</p>
+        <p class="tech-item">Local ML inference only</p>
+        <p class="tech-item">Silent Mode toggle</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Market -->
+<section id="market">
+  <span class="section-tag reveal">04 — Market</span>
+  <div class="market-tam reveal">$<span>75</span>B</div>
+  <p class="market-label reveal">Combined Total Addressable Market</p>
+
+  <div class="segments">
+    <div class="segment reveal">
+      <p class="segment-tam">$5B</p>
+      <p class="segment-name">B2B · Enterprise</p>
+      <p>Lawyers, diplomats, executives. Current alternative: interpreters at $300+/hour. VOIZEX ROI in 5 billable hours.</p>
+    </div>
+    <div class="segment reveal">
+      <p class="segment-tam">$40B</p>
+      <p class="segment-name">B2C · Travel</p>
+      <p>50M+ international travelers. Hands-free, real-time, no shared device. Full immersion without preparation.</p>
+    </div>
+    <div class="segment reveal">
+      <p class="segment-tam">$30B</p>
+      <p class="segment-name">B2C · Expats & Students</p>
+      <p>280M expats, 5M studying abroad. Learn by living. Speak naturally. Make real connections from day one.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Roadmap -->
+<section id="roadmap">
+  <div class="roadmap-inner">
+    <span class="section-tag reveal">05 — Roadmap</span>
+    <h2 class="section-title reveal">Translation first.<br><em>Then silence.</em></h2>
+
+    <div class="timeline">
+      <div class="tl-item reveal">
+        <p class="tl-phase">Months 1–5 · Foundation</p>
+        <h3 class="tl-title">Legal formation + core team + prototype</h3>
+        <p class="tl-desc">Delaware C-Corp, IP filing, core 5-person team hired. 10 prototype devices. Product validation and bio tests.</p>
+      </div>
+      <div class="tl-item reveal">
+        <p class="tl-phase">Months 5–15 · Pilot → Scale</p>
+        <h3 class="tl-title">Beta batch 500 units → 1,000 units B2B launch</h3>
+        <p class="tl-desc">Early adopters. First B2B contracts (law firms, hotels, airlines). Revenue begins. Series A prep.</p>
+      </div>
+      <div class="tl-item reveal">
+        <p class="tl-phase">Months 15–24 · B2C Scale</p>
+        <h3 class="tl-title">5,000–10,000 units. Enter consumer market.</h3>
+        <p class="tl-desc">Premium B2C launch. Subscription tiers activated. EMG dataset collection begins passively across user base.</p>
+      </div>
+      <div class="tl-item reveal">
+        <p class="tl-phase">Months 24–32 · Ghost Mode</p>
+        <h3 class="tl-title">Subvocal v1.0 — speak without sound</h3>
+        <p class="tl-desc">OTA update. Silent Mode enabled via EMG. Closed beta: lawyers and diplomats. Zero audio signature. Unique in the market.</p>
+      </div>
+      <div class="tl-item reveal">
+        <p class="tl-phase">Month 36+ · Defense &amp; Global</p>
+        <h3 class="tl-title">Government contracts. Enterprise licensing. Exit $500M–1B+</h3>
+        <p class="tl-desc">Potential acquisition by Raytheon, Palantir tier. Proprietary EMG dataset as defense-grade moat.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Seed -->
+<section id="seed">
+  <span class="section-tag reveal">06 — Seed Round</span>
+  <div class="seed-layout">
+    <div>
+      <div class="seed-amount reveal">$400K</div>
+      <p class="seed-label reveal">Seed Round · Open 2026</p>
+      <p class="seed-desc reveal">4-month runway for core team, 10-unit prototype build, legal formation, and product validation. Milestone: Series A ready with 500-unit pilot and first B2B contracts.</p>
+    </div>
+    <div class="fund-bars reveal">
+      <div class="fund-item">
+        <div class="fund-header">
+          <span class="fund-name">Team (4 months)</span>
+          <span class="fund-val">$215K · 54%</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill" style="width:54%; animation-delay:0.1s"></div></div>
+      </div>
+      <div class="fund-item">
+        <div class="fund-header">
+          <span class="fund-name">Hardware & Prototyping</span>
+          <span class="fund-val">$100K · 25%</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill" style="width:25%; animation-delay:0.25s"></div></div>
+      </div>
+      <div class="fund-item">
+        <div class="fund-header">
+          <span class="fund-name">Legal & IP</span>
+          <span class="fund-val">$50K · 12.5%</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill" style="width:12.5%; animation-delay:0.4s"></div></div>
+      </div>
+      <div class="fund-item">
+        <div class="fund-header">
+          <span class="fund-name">Contingency Buffer</span>
+          <span class="fund-val">$35K · 8.5%</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill" style="width:8.5%; animation-delay:0.55s"></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Contact -->
+<section id="contact">
+  <div class="contact-inner">
+    <h2 class="contact-title reveal">Let's<br>talk.</h2>
+    <div class="contact-links reveal">
+      <a href="mailto:wriwers@outlook.com" class="contact-link">
+        <svg class="contact-link-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M20 4H4C2.9 4 2 4.9 2 6v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+        </svg>
+        wriwers@outlook.com
+      </a>
+      <a href="https://linkedin.com/in/wriwers" target="_blank" rel="noopener" class="contact-link">
+        <svg class="contact-link-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M19 3H5C3.895 3 3 3.895 3 5v14c0 1.105.895 2 2 2h14c1.105 0 2-.895 2-2V5c0-1.105-.895-2-2-2zm-11 15H5v-9h3v9zm-1.5-10.268c-.966 0-1.75-.784-1.75-1.75s.784-1.75 1.75-1.75 1.75.784 1.75 1.75-.784 1.75-1.75 1.75zM20 18h-3v-4.5c0-1.104-.896-2-2-2s-2 .896-2 2V18h-3V9h3v1.334C13.422 9.53 14.37 9 15.5 9c2.485 0 4.5 2.015 4.5 4.5V18z"/>
+        </svg>
+        linkedin.com/in/wriwers
+      </a>
+    </div>
+    <p style="margin-top:40px; font-family:'DM Mono',monospace; font-size:11px; color:var(--muted); letter-spacing:0.1em;">Ann Fedotova · Founder & CEO · VOIZEX</p>
+  </div>
+</section>
+
+<footer>
+  <p>© 2026 VOIZEX</p>
+  <p>The Silence Platform</p>
+</footer>
+
+<script>
+  // Stars
+  const starsEl = document.getElementById('stars');
+  for (let i = 0; i < 120; i++) {
+    const s = document.createElement('div');
+    s.className = 'star';
+    const size = Math.random() * 2 + 0.5;
+    s.style.cssText = `
+      width:${size}px; height:${size}px;
+      top:${Math.random()*100}%;
+      left:${Math.random()*100}%;
+      --dur:${3+Math.random()*6}s;
+      --delay:${Math.random()*6}s;
+      --min-op:${0.05+Math.random()*0.15};
+      --max-op:${0.3+Math.random()*0.5};
+    `;
+    starsEl.appendChild(s);
+  }
+
+  // Nav scroll
+  const nav = document.getElementById('nav');
+  window.addEventListener('scroll', () => {
+    nav.classList.toggle('scrolled', window.scrollY > 40);
+  });
+
+  // Reveal on scroll
+  const reveals = document.querySelectorAll('.reveal');
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); } });
+  }, { threshold: 0.12 });
+  reveals.forEach(el => io.observe(el));
+</script>
+</body>
+</html>
